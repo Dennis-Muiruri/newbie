@@ -34,29 +34,49 @@ ACCENT_MAPPING = {
 st.set_page_config(page_title="English Accent Classifier", layout="centered")
 
 # Set the GITHUB_RAW_IMAGE_URL to your specific raw GitHub image URL
+# Ensure image.png is in a 'static' folder in your GitHub repository
 GITHUB_RAW_IMAGE_URL = "https://raw.githubusercontent.com/Dennis-Muiruri/newbie/main/static/image.png"
 
 st.markdown(f"""
     <style>
-    /* Target the main Streamlit app container directly */
+    /* Target the main Streamlit app container directly for background */
     .stApp {{
         background-image: url('{GITHUB_RAW_IMAGE_URL}');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
-        /* Ensure the background covers the full height of the Streamlit app */
-        min-height: 100vh;
+        min-height: 100vh; /* Ensure the background covers the full height */
+        display: flex; /* Use flexbox for vertical layout control */
+        flex-direction: column;
+        justify-content: center; /* Center content vertically within the app container */
+        align-items: center; /* Center content horizontally within the app container */
+        padding: 20px; /* Add some padding around the main content */
+        box-sizing: border-box; /* Include padding in element's total width and height */
     }}
-    /* Main heading style */
+
+    /* Target Streamlit's main content block to adjust its padding and layout */
+    .block-container {{
+        flex-grow: 1; /* Allow the content block to grow and take available space */
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Center content within this block */
+        align-items: center;
+        padding-top: 0rem; /* Reduce default top padding */
+        padding-bottom: 0rem; /* Reduce default bottom padding */
+        width: 100%; /* Ensure it takes full width within stApp */
+        max-width: 800px; /* Optional: limit max width for better readability on very wide screens */
+    }}
+
+    /* Adjust main heading style */
     .main-heading {{
-        font-size: 48px;
+        font-size: 3em; /* Slightly smaller to fit better on various screens */
         font-weight: bold;
         text-align: center;
-        color: #38bdf8; /* A shade of blue for vibrancy */
-        text-shadow: 0 0 10px rgba(56, 189, 248, 0.8), /* Glow effect */
+        color: #38bdf8;
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.8),
                                 0 0 20px rgba(56, 189, 248, 0.6),
                                 0 0 30px rgba(56, 189, 248, 0.4);
-        margin-bottom: 30px;
+        margin-bottom: 1.5em; /* Adjusted margin */
     }}
     /* Style for the text input field */
     .stTextInput > div > div > input {{
@@ -77,7 +97,9 @@ st.markdown(f"""
         border-radius: 12px;
         text-align: center;
         margin-top: 20px;
-        color: white; /* White text for results */
+        color: white;
+        max-width: 90%; /* Ensure it doesn't overflow horizontally on small screens */
+        box-sizing: border-box; /* Include padding in element's total width */
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -146,12 +168,19 @@ def analyze_accent(audio_path, classifier):
         if sr != 16000:
             waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
 
-        # Classify the accent
         _, score, _, text_lab = classifier.classify_batch(waveform)
 
         if text_lab:
             label = text_lab[0]
-            confidence = float(torch.max(score).exp().item()) * 100 # Convert logit to probability
+            # --- FIX: Confidence Score Calculation ---
+            # Apply softmax to convert logits/log-probabilities to actual probabilities (0-1 range)
+            # Assuming 'score' is a tensor like [1, num_classes] (batch_size=1)
+            probabilities = torch.softmax(score, dim=1)
+            # Get the maximum probability (which is the confidence) from the probabilities tensor
+            max_prob = torch.max(probabilities).item()
+            confidence = max_prob * 100 # Convert to percentage (0-100)
+            # --- END FIX ---
+
             classification = ACCENT_MAPPING.get(label, f"Unknown ({label})") # Map label to readable name
 
             result["classification"] = classification
@@ -168,7 +197,7 @@ def analyze_accent(audio_path, classifier):
 # --- Streamlit UI ---
 
 # Input field for video URL
-st.markdown("## Enter a public video URL (e.g., YouTube, Loom)")
+st.markdown("## Enter a public video URL (e.g., YouTube, Loom, Vimeo)")
 video_url = st.text_input("Example: https://www.youtube.com/watch?v=abc123 or https://www.loom.com/share/...", key="video_url_input")
 
 # Analyze button
