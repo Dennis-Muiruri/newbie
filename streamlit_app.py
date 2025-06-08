@@ -7,9 +7,7 @@ import torchaudio
 import streamlit as st
 from speechbrain.inference.classifiers import EncoderClassifier
 
-# --------------------------
-# Config
-# --------------------------
+# Constants
 SPEECHBRAIN_ACCENT_MODEL_SOURCE = "Jzuluaga/accent-id-commonaccent_ecapa"
 SPEECHBRAIN_MODEL_SAVEDIR = os.path.join(os.path.expanduser("~"), "speechbrain_models")
 
@@ -32,10 +30,53 @@ ACCENT_MAPPING = {
     "wales": "Welsh English",
 }
 
-# --------------------------
-# Functions
-# --------------------------
-@st.cache_resource
+# Styling
+st.set_page_config(page_title="English Accent Classifier", layout="centered")
+
+st.markdown("""
+    <style>
+    body {
+        background-image: url('https://raw.githubusercontent.com/Dennis-Muiruri/newbie/refs/heads/main/static/image.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+    .main-heading {
+        font-size: 48px;
+        font-weight: bold;
+        text-align: center;
+        color: #38bdf8;
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.8),
+                     0 0 20px rgba(56, 189, 248, 0.6),
+                     0 0 30px rgba(56, 189, 248, 0.4);
+        margin-bottom: 30px;
+    }
+    .stTextInput > div > div > input {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .stButton > button {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(67, 56, 202, 0.9));
+        color: white;
+        border-radius: 6px;
+    }
+    .result-box {
+        background-color: rgba(15, 23, 42, 0.85);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        margin-top: 20px;
+        color: white;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown('<h1 class="main-heading">ENGLISH ACCENT CLASSIFIER</h1>', unsafe_allow_html=True)
+
+# --- Accent Analysis Functions ---
+
+@st.cache_resource(show_spinner=False)
 def load_classifier():
     return EncoderClassifier.from_hparams(
         source=SPEECHBRAIN_ACCENT_MODEL_SOURCE,
@@ -64,6 +105,12 @@ def download_audio(video_url, output_dir):
         return None
 
 def analyze_accent(audio_path, classifier):
+    result = {
+        "classification": "Undetermined",
+        "confidence_score": 0.0,
+        "summary": "Unable to determine accent."
+    }
+
     try:
         waveform, sr = torchaudio.load(audio_path)
 
@@ -79,33 +126,37 @@ def analyze_accent(audio_path, classifier):
             label = text_lab[0]
             confidence = float(torch.max(score).exp().item()) * 100
             classification = ACCENT_MAPPING.get(label, f"Unknown ({label})")
-            summary = f"The speaker's accent was classified as **{classification}** with a confidence score of **{confidence:.2f}%**."
 
-            return classification, confidence, summary
+            result["classification"] = classification
+            result["confidence_score"] = round(confidence, 2)
+            result["summary"] = (
+                f"The speaker's accent was classified as {classification} "
+                f"with a confidence score of {result['confidence_score']}%."
+            )
     except Exception as e:
-        return "Undetermined", 0.0, f"Error during analysis: {e}"
+        result["summary"] = f"Error during analysis: {e}"
 
-    return "Undetermined", 0.0, "Unable to determine accent."
+    return result
 
-# --------------------------
-# Streamlit UI
-# --------------------------
-st.set_page_config(page_title="English Accent Classifier", layout="centered")
-st.title("🗣️ English Accent Classifier")
-st.markdown("Analyze a speaker's English accent from a public YouTube video.")
+# --- Streamlit UI ---
+st.markdown("## Enter a public YouTube video URL")
+video_url = st.text_input("Example: https://www.youtube.com/watch?v=abc123")
 
-video_url = st.text_input("Enter YouTube Video URL:", placeholder="https://...")
-
-if st.button("Analyze Accent") and video_url:
+if video_url and st.button("Analyze Accent"):
     with st.spinner("Downloading and analyzing audio..."):
         with tempfile.TemporaryDirectory() as tmpdir:
             audio_path = download_audio(video_url, tmpdir)
             if audio_path:
                 classifier = load_classifier()
-                classification, confidence, summary = analyze_accent(audio_path, classifier)
-                st.success("Analysis Complete ✅")
-                st.markdown(f"**Classification**: {classification}")
-                st.markdown(f"**Confidence Score**: {confidence:.2f}%")
-                st.markdown(summary)
+                result = analyze_accent(audio_path, classifier)
+
+                st.markdown(f"""
+                <div class="result-box">
+                    <h2>Accent Analysis Result</h2>
+                    <p><strong>Classification:</strong> {result["classification"]}</p>
+                    <p><strong>Confidence Score:</strong> {result["confidence_score"]}%</p>
+                    <p>{result["summary"]}</p>
+                </div>
+                """, unsafe_allow_html=True)
             else:
                 st.error("Failed to download or process audio.")
