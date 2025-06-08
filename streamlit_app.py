@@ -33,11 +33,15 @@ ACCENT_MAPPING = {
 # Styling for the Streamlit application
 st.set_page_config(page_title="English Accent Classifier", layout="centered")
 
+# IMPORTANT: Replace YOUR_GITHUB_USERNAME and YOUR_REPO_NAME with your actual details
+# Ensure image.png is in a 'static' folder in your GitHub repository
+GITHUB_RAW_IMAGE_URL = "https://github.com/Dennis-Muiruri/newbie/blob/main/static/image.png?raw=true"
+
 st.markdown(f"""
     <style>
     /* General body styling for background image */
     body {{
-        background-image: url('https://imgs.search.brave.com/q2Aw7PxuzmNl0tc9QEcWokHdKQMWUCDCTt59x71Hi6U/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJhY2Nlc3Mu/Y29tL2Z1bGwvMTM5/ODUxMC5qcGc');
+        background-image: url('{GITHUB_RAW_IMAGE_URL}');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
