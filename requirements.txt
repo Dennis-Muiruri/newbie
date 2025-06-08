@@ -1,4 +1,3 @@
-flask
 streamlit
 yt-dlp
 torch
