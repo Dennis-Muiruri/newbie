@@ -167,7 +167,7 @@ def analyze_accent(audio_path, classifier):
 # --- Streamlit UI ---
 
 # Input field for video URL
-st.markdown("## Enter a public video URL (e.g., YouTube, Loom, Vimeo)")
+st.markdown("## Enter a public video URL (e.g., YouTube, Loom)")
 video_url = st.text_input("Example: https://www.youtube.com/watch?v=abc123 or https://www.loom.com/share/...", key="video_url_input")
 
 # Analyze button
