@@ -33,18 +33,19 @@ ACCENT_MAPPING = {
 # Styling for the Streamlit application
 st.set_page_config(page_title="English Accent Classifier", layout="centered")
 
-# IMPORTANT: Replace the placeholder below with the EXACT raw URL you copied from GitHub!
-# Example: GITHUB_RAW_IMAGE_URL = "https://raw.githubusercontent.com/your-username/your-repo-name/main/static/image.png"
-GITHUB_RAW_IMAGE_URL = "https://raw.githubusercontent.com/Dennis-Muiruri/newbie/refs/heads/main/static/image.png" # <--- **UPDATE THIS LINE**
+# Set the GITHUB_RAW_IMAGE_URL to your specific raw GitHub image URL
+GITHUB_RAW_IMAGE_URL = "https://raw.githubusercontent.com/Dennis-Muiruri/newbie/main/static/image.png"
 
 st.markdown(f"""
     <style>
-    /* General body styling for background image */
-    body {{
+    /* Target the main Streamlit app container directly */
+    .stApp {{
         background-image: url('{GITHUB_RAW_IMAGE_URL}');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
+        /* Ensure the background covers the full height of the Streamlit app */
+        min-height: 100vh;
     }}
     /* Main heading style */
     .main-heading {{
@@ -167,7 +168,7 @@ def analyze_accent(audio_path, classifier):
 # --- Streamlit UI ---
 
 # Input field for video URL
-st.markdown("## Enter a public video URL (e.g., YouTube, Loom)")
+st.markdown("## Enter a public video URL (e.g., YouTube, Loom, Vimeo)")
 video_url = st.text_input("Example: https://www.youtube.com/watch?v=abc123 or https://www.loom.com/share/...", key="video_url_input")
 
 # Analyze button
