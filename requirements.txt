@@ -3,4 +3,4 @@ yt-dlp
 torch
 torchaudio
 speechbrain
-sentencepiece==0.1.96
+sentencepiece
