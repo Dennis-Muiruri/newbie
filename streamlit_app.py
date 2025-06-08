@@ -30,74 +30,89 @@ ACCENT_MAPPING = {
     "wales": "Welsh English",
 }
 
-# Styling
+# Styling for the Streamlit application
 st.set_page_config(page_title="English Accent Classifier", layout="centered")
 
-st.markdown("""
+st.markdown(f"""
     <style>
-    body {
-        background-image: url('https://raw.githubusercontent.com/Dennis-Muiruri/newbie/refs/heads/main/static/image.png');
+    /* General body styling for background image */
+    body {{
+        background-image: url('https://imgs.search.brave.com/q2Aw7PxuzmNl0tc9QEcWokHdKQMWUCDCTt59x71Hi6U/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJhY2Nlc3Mu/Y29tL2Z1bGwvMTM5/ODUxMC5qcGc');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
-    }
-    .main-heading {
+    }}
+    /* Main heading style */
+    .main-heading {{
         font-size: 48px;
         font-weight: bold;
         text-align: center;
-        color: #38bdf8;
-        text-shadow: 0 0 10px rgba(56, 189, 248, 0.8),
-                     0 0 20px rgba(56, 189, 248, 0.6),
-                     0 0 30px rgba(56, 189, 248, 0.4);
+        color: #38bdf8; /* A shade of blue for vibrancy */
+        text-shadow: 0 0 10px rgba(56, 189, 248, 0.8), /* Glow effect */
+                                0 0 20px rgba(56, 189, 248, 0.6),
+                                0 0 30px rgba(56, 189, 248, 0.4);
         margin-bottom: 30px;
-    }
-    .stTextInput > div > div > input {
-        background-color: rgba(255, 255, 255, 0.1);
-        color: white;
-        border: 1px solid rgba(255, 255, 255, 0.3);
-    }
-    .stButton > button {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(67, 56, 202, 0.9));
+    }}
+    /* Style for the text input field */
+    .stTextInput > div > div > input {{
+        background-color: rgba(255, 255, 255, 0.1); /* Slightly transparent white */
+        color: white; /* White text for contrast */
+        border: 1px solid rgba(255, 255, 255, 0.3); /* Subtle border */
+    }}
+    /* Style for the Streamlit button */
+    .stButton > button {{
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(67, 56, 202, 0.9)); /* Gradient blue/purple */
         color: white;
         border-radius: 6px;
-    }
-    .result-box {
-        background-color: rgba(15, 23, 42, 0.85);
+    }}
+    /* Styling for the result display box */
+    .result-box {{
+        background-color: rgba(15, 23, 42, 0.85); /* Dark, slightly transparent background */
         padding: 20px;
         border-radius: 12px;
         text-align: center;
         margin-top: 20px;
-        color: white;
-    }
+        color: white; /* White text for results */
+    }}
     </style>
 """, unsafe_allow_html=True)
 
+# Display the main heading
 st.markdown('<h1 class="main-heading">ENGLISH ACCENT CLASSIFIER</h1>', unsafe_allow_html=True)
 
 # --- Accent Analysis Functions ---
 
 @st.cache_resource(show_spinner=False)
 def load_classifier():
+    """
+    Loads the SpeechBrain EncoderClassifier model.
+    This function is cached to prevent re-downloading the model on every rerun.
+    """
     return EncoderClassifier.from_hparams(
         source=SPEECHBRAIN_ACCENT_MODEL_SOURCE,
         savedir=SPEECHBRAIN_MODEL_SAVEDIR,
-        run_opts={"check_for_updates": False}
+        run_opts={"check_for_updates": False} # Prevents frequent checks for model updates
     )
 
 def download_audio(video_url, output_dir):
+    """
+    Downloads audio from a given video URL using yt-dlp.
+    The audio is converted to a WAV file with specific settings (16kHz, mono).
+    """
     audio_path = os.path.join(output_dir, "audio.wav")
-    audio_path = str(pathlib.Path(audio_path).resolve())
+    audio_path = str(pathlib.Path(audio_path).resolve()) # Ensure absolute path
 
     command = [
         "yt-dlp",
-        "-x",
-        "--audio-format", "wav",
-        "--postprocessor-args", "-ar 16000 -ac 1",
-        "-o", audio_path,
-        video_url,
+        "-x", # Extract audio
+        "--audio-format", "wav", # Specify WAV format
+        "--postprocessor-args", "-ar 16000 -ac 1", # Resample to 16kHz, mono
+        "-o", audio_path, # Output path
+        video_url, # Input video URL
     ]
 
     try:
+        # Run yt-dlp command to download and process audio
         subprocess.run(command, check=True, capture_output=True)
         return audio_path
     except Exception as e:
@@ -105,6 +120,9 @@ def download_audio(video_url, output_dir):
         return None
 
 def analyze_accent(audio_path, classifier):
+    """
+    Analyzes the accent from an audio file using the pre-loaded SpeechBrain classifier.
+    """
     result = {
         "classification": "Undetermined",
         "confidence_score": 0.0,
@@ -112,26 +130,30 @@ def analyze_accent(audio_path, classifier):
     }
 
     try:
+        # Load the audio waveform
         waveform, sr = torchaudio.load(audio_path)
 
+        # If stereo, convert to mono by taking the mean
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
 
+        # Resample to 16kHz if not already
         if sr != 16000:
             waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
 
+        # Classify the accent
         _, score, _, text_lab = classifier.classify_batch(waveform)
 
         if text_lab:
             label = text_lab[0]
-            confidence = float(torch.max(score).exp().item()) * 100
-            classification = ACCENT_MAPPING.get(label, f"Unknown ({label})")
+            confidence = float(torch.max(score).exp().item()) * 100 # Convert logit to probability
+            classification = ACCENT_MAPPING.get(label, f"Unknown ({label})") # Map label to readable name
 
             result["classification"] = classification
             result["confidence_score"] = round(confidence, 2)
             result["summary"] = (
-                f"The speaker's accent was classified as {classification} "
-                f"with a confidence score of {result['confidence_score']}%."
+                f"The speaker's accent was classified as **{classification}** "
+                f"with a confidence score of **{result['confidence_score']}%**."
             )
     except Exception as e:
         result["summary"] = f"Error during analysis: {e}"
@@ -139,9 +161,12 @@ def analyze_accent(audio_path, classifier):
     return result
 
 # --- Streamlit UI ---
-st.markdown("## Enter a public YouTube video URL")
-video_url = st.text_input("Example: https://www.youtube.com/watch?v=abc123")
 
+# Input field for video URL
+st.markdown("## Enter a public video URL (e.g., YouTube, Loom, Vimeo)")
+video_url = st.text_input("Example: https://www.youtube.com/watch?v=abc123 or https://www.loom.com/share/...", key="video_url_input")
+
+# Analyze button
 if video_url and st.button("Analyze Accent"):
     with st.spinner("Downloading and analyzing audio..."):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -150,6 +175,7 @@ if video_url and st.button("Analyze Accent"):
                 classifier = load_classifier()
                 result = analyze_accent(audio_path, classifier)
 
+                # Display results in a styled box
                 st.markdown(f"""
                 <div class="result-box">
                     <h2>Accent Analysis Result</h2>
@@ -159,4 +185,4 @@ if video_url and st.button("Analyze Accent"):
                 </div>
                 """, unsafe_allow_html=True)
             else:
-                st.error("Failed to download or process audio.")
+                st.error("Failed to download or process audio. Please check the URL and try again.")
