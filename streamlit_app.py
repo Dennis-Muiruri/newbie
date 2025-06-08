@@ -37,18 +37,25 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Set the GITHUB_RAW_IMAGE_URL to your specific raw GitHub image URL
+# This URL should point directly to your image.png file in your GitHub repository's static folder
+GITHUB_RAW_IMAGE_URL = "https://raw.githubusercontent.com/Dennis-Muiruri/newbie/main/static/image.png"
+
 # CSS styling
-st.markdown("""
+st.markdown(f"""
 <style>
-body {
-    background-image: url('https://raw.githubusercontent.com/Dennis-Muiruri/newbie/refs/heads/main/static/image.png');
+/* Target the main Streamlit app container directly for background */
+.stApp {{
+    background-image: url('{GITHUB_RAW_IMAGE_URL}');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     margin: 0;
     overflow: hidden;
-}
-.main-heading {
+    min-height: 100vh; /* Ensure the background covers the full height of the Streamlit app */
+}}
+/* Main heading style */
+.main-heading {{
     font-size: 42px;
     font-weight: bold;
     text-align: center;
@@ -56,8 +63,8 @@ body {
     text-shadow: 0 0 10px rgba(56, 189, 248, 0.8),
                  0 0 20px rgba(56, 189, 248, 0.6);
     margin-bottom: 10px;
-}
-.result-box {
+}}
+.result-box {{
     background-color: rgba(15, 23, 42, 0.85);
     padding: 18px;
     border-radius: 12px;
@@ -65,18 +72,18 @@ body {
     font-size: 18px;
     text-align: center;
     margin-top: 20px;
-}
-.stTextInput input {
+}}
+.stTextInput input {{
     background-color: rgba(255, 255, 255, 0.1);
     color: white;
-}
-.stButton > button {
+}}
+.stButton > button {{
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(67, 56, 202, 0.9));
     color: white;
     border-radius: 8px;
     font-size: 16px;
     padding: 10px 16px;
-}
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -84,6 +91,10 @@ st.markdown('<h1 class="main-heading">ENGLISH ACCENT CLASSIFIER</h1>', unsafe_al
 
 @st.cache_resource(show_spinner=False)
 def load_classifier():
+    """
+    Loads the SpeechBrain EncoderClassifier model.
+    This function is cached to prevent re-downloading the model on every rerun.
+    """
     return EncoderClassifier.from_hparams(
         source=SPEECHBRAIN_ACCENT_MODEL_SOURCE,
         savedir=SPEECHBRAIN_MODEL_SAVEDIR,
@@ -91,16 +102,20 @@ def load_classifier():
     )
 
 def download_audio(video_url, output_dir):
+    """
+    Downloads audio from a given video URL using yt-dlp.
+    The audio is converted to a WAV file with specific settings (16kHz, mono).
+    """
     audio_path = os.path.join(output_dir, "audio.wav")
     audio_path = str(pathlib.Path(audio_path).resolve())
 
     command = [
         "yt-dlp",
-        "-x",
-        "--audio-format", "wav",
-        "--postprocessor-args", "-ar 16000 -ac 1",
-        "-o", audio_path,
-        video_url,
+        "-x", # Extract audio
+        "--audio-format", "wav", # Specify WAV format
+        "--postprocessor-args", "-ar 16000 -ac 1", # Resample to 16kHz, mono
+        "-o", audio_path, # Output path
+        video_url, # Input video URL
     ]
 
     try:
@@ -111,6 +126,9 @@ def download_audio(video_url, output_dir):
         return None
 
 def analyze_accent(audio_path, classifier):
+    """
+    Analyzes the accent from an audio file using the pre-loaded SpeechBrain classifier.
+    """
     result = {
         "classification": "Undetermined",
         "confidence_score": 0.0,
@@ -118,18 +136,22 @@ def analyze_accent(audio_path, classifier):
     }
 
     try:
+        # Load the audio waveform
         waveform, sr = torchaudio.load(audio_path)
 
+        # If stereo, convert to mono by taking the mean
         if waveform.shape[0] > 1:
             waveform = waveform.mean(dim=0, keepdim=True)
 
+        # Resample to 16kHz if not already
         if sr != 16000:
             waveform = torchaudio.transforms.Resample(sr, 16000)(waveform)
 
         probs, scores, _, labels = classifier.classify_batch(waveform)
         if labels:
             label = labels[0]
-            confidence = torch.softmax(scores[0], dim=0).max().item() * 100  # Normalize to 0–100%
+            # Original confidence calculation from your previous working code
+            confidence = torch.softmax(scores[0], dim=0).max().item() * 100 # Normalize to 0–100%
             classification = ACCENT_MAPPING.get(label, f"Unknown ({label})")
 
             result["classification"] = classification
