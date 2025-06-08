@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Accent Classifier</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background-image: url('{{ url_for('static', filename='images/image.png') }}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: white;
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .main-content {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+        .main-heading {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #38bdf8;
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.8),
+                         0 0 20px rgba(56, 189, 248, 0.6),
+                         0 0 30px rgba(56, 189, 248, 0.4);
+        }
+        .container {
+            background-color: rgba(15, 23, 42, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        }
+        .upload-form {
+            margin-bottom: 20px;
+        }
+        .upload-form label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .upload-form input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: none;
+            margin-bottom: 15px;
+        }
+        .upload-form button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(67, 56, 202, 0.9));
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .upload-form button:hover {
+            background: linear-gradient(135deg, rgba(129, 140, 248, 0.9), rgba(99, 102, 241, 0.9));
+        }
+        .template-container {
+            background-color: rgba(30, 41, 59, 0.85);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .template-container h2 {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-content">
+        <h1 class="main-heading">ENGLISH ACCENT CLASSIFIER</h1>
+
+        <div class="container">
+            <form method="POST" class="upload-form">
+                <label for="video_url">Enter Public Video URL:</label>
+                <input type="text" name="video_url" id="video_url" placeholder="https://..." required>
+                <button type="submit">Analyze Accent</button>
+            </form>
+
+            {% if result %}
+            <div class="template-container">
+                <h2>Accent Analysis Result</h2>
+                <p><strong>Classification:</strong> {{ result.classification }}</p>
+                <p><strong>Confidence Score:</strong> {{ result.confidence_score }}%</p>
+                <p>{{ result.summary }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
